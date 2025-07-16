@@ -2187,7 +2187,9 @@ async fn import_dump_v6_containing_experimental_features() {
       "containsFilter": false,
       "network": false,
       "getTaskDocumentsRoute": false,
-      "compositeEmbedders": false
+      "compositeEmbedders": false,
+      "chatCompletions": false,
+      "multimodal": false
     }
     "###);
 
@@ -2312,7 +2314,9 @@ async fn import_dump_v6_containing_batches_and_enqueued_tasks() {
       "containsFilter": false,
       "network": false,
       "getTaskDocumentsRoute": false,
-      "compositeEmbedders": false
+      "compositeEmbedders": false,
+      "chatCompletions": false,
+      "multimodal": false
     }
     "###);
 
@@ -2362,7 +2366,7 @@ async fn generate_and_import_dump_containing_vectors() {
         ))
         .await;
     snapshot!(code, @"202 Accepted");
-    let response = index.wait_task(response.uid()).await;
+    let response = server.wait_task(response.uid()).await;
     snapshot!(response);
     let (response, code) = index
         .add_documents(
@@ -2377,12 +2381,12 @@ async fn generate_and_import_dump_containing_vectors() {
         )
         .await;
     snapshot!(code, @"202 Accepted");
-    let response = index.wait_task(response.uid()).await;
+    let response = server.wait_task(response.uid()).await;
     snapshot!(response);
 
     let (response, code) = server.create_dump().await;
     snapshot!(code, @"202 Accepted");
-    let response = index.wait_task(response.uid()).await;
+    let response = server.wait_task(response.uid()).await;
     snapshot!(response["status"], @r###""succeeded""###);
 
     // ========= We made a dump, now we should clear the DB and try to import our dump
@@ -2417,7 +2421,9 @@ async fn generate_and_import_dump_containing_vectors() {
       "containsFilter": false,
       "network": false,
       "getTaskDocumentsRoute": false,
-      "compositeEmbedders": false
+      "compositeEmbedders": false,
+      "chatCompletions": false,
+      "multimodal": false
     }
     "###);
 

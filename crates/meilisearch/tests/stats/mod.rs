@@ -6,8 +6,8 @@ use crate::common::Server;
 use crate::json;
 
 #[actix_rt::test]
-async fn get_settings_unexisting_index() {
-    let server = Server::new().await;
+async fn get_version() {
+    let server = Server::new_shared();
     let (response, code) = server.version().await;
     assert_eq!(code, 200);
     let version = response.as_object().unwrap();
@@ -18,7 +18,7 @@ async fn get_settings_unexisting_index() {
 
 #[actix_rt::test]
 async fn test_healthyness() {
-    let server = Server::new().await;
+    let server = Server::new_shared();
 
     let (response, status_code) = server.service.get("/health").await;
     assert_eq!(status_code, 200);
@@ -32,7 +32,7 @@ async fn stats() {
     let (task, code) = index.create(Some("id")).await;
 
     assert_eq!(code, 202);
-    index.wait_task(task.uid()).await.succeeded();
+    server.wait_task(task.uid()).await.succeeded();
 
     let (response, code) = server.stats().await;
 
@@ -55,10 +55,10 @@ async fn stats() {
     ]);
 
     let (response, code) = index.add_documents(documents, None).await;
-    assert_eq!(code, 202, "{}", response);
+    assert_eq!(code, 202, "{response}");
     assert_eq!(response["taskUid"], 1);
 
-    index.wait_task(response.uid()).await.succeeded();
+    server.wait_task(response.uid()).await.succeeded();
 
     let timestamp = OffsetDateTime::now_utc();
     let (response, code) = server.stats().await;
@@ -78,8 +78,8 @@ async fn stats() {
 
 #[actix_rt::test]
 async fn add_remove_embeddings() {
-    let server = Server::new().await;
-    let index = server.index("doggo");
+    let server = Server::new_shared();
+    let index = server.unique_index();
 
     let (response, code) = index
         .update_settings(json!({
@@ -107,7 +107,7 @@ async fn add_remove_embeddings() {
 
     let (response, code) = index.add_documents(documents, None).await;
     snapshot!(code, @"202 Accepted");
-    index.wait_task(response.uid()).await.succeeded();
+    server.wait_task(response.uid()).await.succeeded();
 
     let (stats, _code) = index.stats().await;
     snapshot!(json_string!(stats, {
@@ -135,7 +135,7 @@ async fn add_remove_embeddings() {
 
     let (response, code) = index.update_documents(documents, None).await;
     snapshot!(code, @"202 Accepted");
-    index.wait_task(response.uid()).await.succeeded();
+    server.wait_task(response.uid()).await.succeeded();
 
     let (stats, _code) = index.stats().await;
     snapshot!(json_string!(stats, {
@@ -163,7 +163,7 @@ async fn add_remove_embeddings() {
 
     let (response, code) = index.update_documents(documents, None).await;
     snapshot!(code, @"202 Accepted");
-    index.wait_task(response.uid()).await.succeeded();
+    server.wait_task(response.uid()).await.succeeded();
 
     let (stats, _code) = index.stats().await;
     snapshot!(json_string!(stats, {
@@ -192,7 +192,7 @@ async fn add_remove_embeddings() {
 
     let (response, code) = index.update_documents(documents, None).await;
     snapshot!(code, @"202 Accepted");
-    index.wait_task(response.uid()).await.succeeded();
+    server.wait_task(response.uid()).await.succeeded();
 
     let (stats, _code) = index.stats().await;
     snapshot!(json_string!(stats, {
@@ -216,8 +216,8 @@ async fn add_remove_embeddings() {
 
 #[actix_rt::test]
 async fn add_remove_embedded_documents() {
-    let server = Server::new().await;
-    let index = server.index("doggo");
+    let server = Server::new_shared();
+    let index = server.unique_index();
 
     let (response, code) = index
         .update_settings(json!({
@@ -245,7 +245,7 @@ async fn add_remove_embedded_documents() {
 
     let (response, code) = index.add_documents(documents, None).await;
     snapshot!(code, @"202 Accepted");
-    index.wait_task(response.uid()).await.succeeded();
+    server.wait_task(response.uid()).await.succeeded();
 
     let (stats, _code) = index.stats().await;
     snapshot!(json_string!(stats, {
@@ -269,7 +269,7 @@ async fn add_remove_embedded_documents() {
     // delete one embedded document, remaining 1 embedded documents for 3 embeddings in total
     let (response, code) = index.delete_document(0).await;
     snapshot!(code, @"202 Accepted");
-    index.wait_task(response.uid()).await.succeeded();
+    server.wait_task(response.uid()).await.succeeded();
 
     let (stats, _code) = index.stats().await;
     snapshot!(json_string!(stats, {
@@ -293,8 +293,8 @@ async fn add_remove_embedded_documents() {
 
 #[actix_rt::test]
 async fn update_embedder_settings() {
-    let server = Server::new().await;
-    let index = server.index("doggo");
+    let server = Server::new_shared();
+    let index = server.unique_index();
 
     // 2 embedded documents for 3 embeddings in total
     // but no embedders are added in the settings yet so we expect 0 embedded documents for 0 embeddings in total
@@ -305,7 +305,7 @@ async fn update_embedder_settings() {
 
     let (response, code) = index.add_documents(documents, None).await;
     snapshot!(code, @"202 Accepted");
-    index.wait_task(response.uid()).await.succeeded();
+    server.wait_task(response.uid()).await.succeeded();
 
     let (stats, _code) = index.stats().await;
     snapshot!(json_string!(stats, {
